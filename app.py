@@ -61,7 +61,7 @@ if "loans" not in st.session_state:
 # =========================
 # TIÊU ĐỀ
 # =========================
-demo bank.webp
+images/logo.png
 st.markdown("""
 <div class="main-title">
     <h1>🏦 DemoBANK</h1>
