@@ -118,7 +118,7 @@ if menu == "🏠 Trang chủ":
 
     with col1:
         st.markdown("""
-        <div class="service-card">
+        <div class="bank-header">
         <h3>💳 Mở thẻ ngân hàng</h3>
         <p>Đăng ký thẻ ghi nợ hoặc thẻ tín dụng.</p>
         </div>
