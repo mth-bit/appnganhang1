@@ -1,5 +1,4 @@
 import pandas as pd
-from database import save_request, get_all_requests
 import sqlite3
 from datetime import datetime
 
