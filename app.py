@@ -137,7 +137,7 @@ if menu == "🏠 Trang chủ":
     with col3:
         st.markdown("""
         <div class="service-card">
-        <h3>💰 Gửi tiết kiệm</h3>
+        <h3> Gửi tiết kiệm</h3>
         <p>Tìm hiểu tiền gửi và ước tính tiền lãi.</p>
         </div>
         """, unsafe_allow_html=True)
@@ -145,7 +145,7 @@ if menu == "🏠 Trang chủ":
     with col4:
         st.markdown("""
         <div class="service-card">
-        <h3>🏦 Vay vốn ngân hàng</h3>
+        <h3> Vay vốn ngân hàng</h3>
         <p>Đăng ký nhu cầu vay vốn để được tư vấn.</p>
         </div>
         """, unsafe_allow_html=True)
