@@ -467,4 +467,3 @@ elif menu == "📋 Quản lý đăng ký":
             mime="text/csv"
         )
     "© 2026 DemoBank | Ứng dụng mô phỏng ngân hàng số phục vụ học tập."
-)
