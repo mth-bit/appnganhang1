@@ -148,7 +148,7 @@ if menu == "🏠 Trang chủ":
         <h3> Vay vốn ngân hàng</h3>
         <p>Đăng ký nhu cầu vay vốn để được tư vấn.</p>
         </div>
-    """, unsafe_allow_html=True)
+         """, unsafe_allow_html=True)
 
     st.divider()
     st.subheader("📊 Tổng quan đăng ký")
