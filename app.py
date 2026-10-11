@@ -67,8 +67,6 @@ st.markdown("""
     <h3>Ngân hàng số - Giao dịch dễ dàng</h3>
     <p>An toàn • Nhanh chóng • Tiện lợi</p>
 </div>
-st.image("images/logo.png", width=150)
-
 # Thanh menu
 menu = st.sidebar.radio(
     "📌 DANH MỤC DỊCH VỤ",
