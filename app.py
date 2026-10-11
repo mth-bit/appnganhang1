@@ -61,6 +61,7 @@ if "loans" not in st.session_state:
 # =========================
 # TIÊU ĐỀ
 # =========================
+st.image("images/logo.png", width=150)
 st.markdown("""
 <div class="main-title">
     <h1>🏦 DemoBANK</h1>
