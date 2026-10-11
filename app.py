@@ -61,14 +61,13 @@ if "loans" not in st.session_state:
 # =========================
 # TIÊU ĐỀ
 # =========================
-st.image("images/logo.png", width=150)
 st.markdown("""
 <div class="main-title">
     <h1>🏦 DemoBANK</h1>
     <h3>Ngân hàng số - Giao dịch dễ dàng</h3>
     <p>An toàn • Nhanh chóng • Tiện lợi</p>
 </div>
-""", unsafe_allow_html=True)
+st.image("images/logo.png", width=150)
 
 # Thanh menu
 menu = st.sidebar.radio(
