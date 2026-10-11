@@ -127,7 +127,7 @@ if menu == "🏠 Trang chủ":
     with col2:
         st.markdown("""
         <div class="service-card">
-        <h3>👤 Mở tài khoản</h3>
+        <h3> Mở tài khoản</h3>
         <p>Đăng ký tài khoản ngân hàng trực tuyến.</p>
         </div>
         """, unsafe_allow_html=True)
