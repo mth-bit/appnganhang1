@@ -266,16 +266,9 @@ elif menu == "👤 Mở tài khoản":
                     f"Loại tài khoản: {account_type}; "
                     f"Ngày sinh: {birth}; Email: {email}"
                 )
-                st.session_state.accounts.append({
-                    "Mã yêu cầu": code,
-                    "Họ và tên": name.strip(),
-                    "Loại tài khoản": account_type
-                })
                 st.success(
                     f"Đăng ký thành công! Mã yêu cầu: {code}"
                 )
-
-
 # =========================
 # 3. GỬI TIẾT KIỆM
 # =========================
