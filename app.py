@@ -437,10 +437,12 @@ elif menu == "📋 Quản lý đăng ký":
 
     st.subheader("📋 DANH SÁCH YÊU CẦU ĐĂNG KÝ")
 
-    if not st.session_state.requests:
+    requests = get_all_requests()
+
+    if not requests:
         st.info("Chưa có yêu cầu đăng ký nào.")
     else:
-        df = pd.DataFrame(st.session_state.requests)
+        df = pd.DataFrame(requests)
 
         service_filter = st.selectbox(
             "Lọc theo dịch vụ",
@@ -450,7 +452,11 @@ elif menu == "📋 Quản lý đăng ký":
         if service_filter != "Tất cả":
             df = df[df["Dịch vụ"] == service_filter]
 
-        st.dataframe(df, use_container_width=True, hide_index=True)
+        st.dataframe(
+            df,
+            use_container_width=True,
+            hide_index=True
+        )
 
         csv = df.to_csv(index=False).encode("utf-8-sig")
 
@@ -458,20 +464,7 @@ elif menu == "📋 Quản lý đăng ký":
             "📥 TẢI DANH SÁCH CSV",
             data=csv,
             file_name="thienbank_dang_ky.csv",
-            mime="text/csv",
-            use_container_width=True
+            mime="text/csv"
         )
-
-    with st.expander("Chi tiết từng nhóm dịch vụ"):
-        st.write("💳 Đăng ký thẻ:", len(st.session_state.cards))
-        st.write("👤 Mở tài khoản:", len(st.session_state.accounts))
-        st.write("💰 Gửi tiết kiệm:", len(st.session_state.savings))
-        st.write("🏦 Vay vốn:", len(st.session_state.loans))
-
-# =========================
-# CHÂN TRANG
-# =========================
-st.divider()
-st.caption(
     "© 2026 DemoBank | Ứng dụng mô phỏng ngân hàng số phục vụ học tập."
 )
