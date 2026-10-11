@@ -1,237 +1,309 @@
 import streamlit as st
+import pandas as pd
 from datetime import datetime
-import uuid
+import random
 
+# =========================
+# CẤU HÌNH ỨNG DỤNG
+# =========================
 st.set_page_config(
-    page_title="Banking Demo",
+    page_title="DemoBank - Ngân hàng số",
     page_icon="🏦",
-    layout="centered"
+    layout="wide"
 )
 
-# ===== DEMO CONFIGURATION =====
-DEMO_USER = "sinhvien"
-DEMO_PASS = "123456"
-
-# ===== SESSION DATA =====
-defaults = {
-    "logged_in": False,
-    "balance": 5_000_000,
-    "history": [],
-    "account_requests": [],
-    "card_requests": [],
-    "savings": [],
-    "loans": [],
-}
-
-for key, value in defaults.items():
-    if key not in st.session_state:
-        st.session_state[key] = value
-
-# ===== STYLE =====
+# Giao diện
 st.markdown("""
 <style>
-.stApp { background-color: #f3f7f4; }
-.block-container { max-width: 850px; padding-top: 2rem; }
-h1, h2, h3 { color: #087443; }
-div.stButton > button {
-    background-color: #087443;
-    color: white;
-    border-radius: 8px;
-    min-height: 42px;
+.stApp {
+    background-color: #f4f7fb;
 }
-.demo-banner {
-    background: #fff3cd;
-    color: #664d03;
-    padding: 12px;
-    border-radius: 8px;
+.main-title {
+    background: linear-gradient(120deg, #073b8c, #0878d1);
+    padding: 28px;
+    border-radius: 18px;
+    color: white;
     text-align: center;
+    margin-bottom: 20px;
+}
+.service-card {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    border: 1px solid #e0e8f2;
+}
+div.stButton > button {
+    border-radius: 10px;
     font-weight: bold;
 }
 </style>
 """, unsafe_allow_html=True)
 
+# =========================
+# KHỞI TẠO DỮ LIỆU
+# =========================
+if "requests" not in st.session_state:
+    st.session_state.requests = []
+
+if "accounts" not in st.session_state:
+    st.session_state.accounts = []
+
+if "cards" not in st.session_state:
+    st.session_state.cards = []
+
+if "savings" not in st.session_state:
+    st.session_state.savings = []
+
+if "loans" not in st.session_state:
+    st.session_state.loans = []
+
+# =========================
+# TIÊU ĐỀ
+# =========================
 st.markdown("""
-<div class="demo-banner">
-BẢN MÔ PHỎNG HỌC TẬP — KHÔNG PHẢI ỨNG DỤNG NGÂN HÀNG CHÍNH THỨC
+<div class="main-title">
+    <h1>🏦 DemoBANK</h1>
+    <h3>Ngân hàng số - Giao dịch dễ dàng</h3>
+    <p>An toàn • Nhanh chóng • Tiện lợi</p>
 </div>
 """, unsafe_allow_html=True)
 
-def log_action(service, detail, amount=0):
-    st.session_state.history.insert(0, {
-        "Mã demo": uuid.uuid4().hex[:8].upper(),
-        "Thời gian": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-        "Dịch vụ": service,
-        "Nội dung": detail,
-        "Số tiền minh họa (VNĐ)": int(amount),
-        "Trạng thái": "HOÀN TẤT (DEMO)"
-    })
-
-# ===== LOGIN =====
-if not st.session_state.logged_in:
-    st.title("🏦 BANKING DEMO")
-    st.subheader("Đăng nhập")
-
-    st.info("Tài khoản demo: sinhvien | Mật khẩu: 123456")
-
-    with st.form("login"):
-        username = st.text_input("Tên đăng nhập")
-        password = st.text_input("Mật khẩu", type="password")
-        submit = st.form_submit_button("Đăng nhập")
-
-    if submit:
-        if username == DEMO_USER and password == DEMO_PASS:
-            st.session_state.logged_in = True
-            st.rerun()
-        else:
-            st.error("Thông tin đăng nhập demo không đúng.")
-
-    st.stop()
-
-# ===== SIDEBAR =====
-st.sidebar.title("BANKING DEMO")
-st.sidebar.caption("Ngân hàng số mô phỏng")
-
-page = st.sidebar.radio(
-    "CHỌN DỊCH VỤ",
+# Thanh menu
+menu = st.sidebar.radio(
+    "📌 DANH MỤC DỊCH VỤ",
     [
-        "Trang chủ",
-        "1. Mở tài khoản",
-        "2. Mở thẻ",
-        "3. Gửi tiết kiệm",
-        "4. Vay vốn",
-        "5. Chuyển tiền",
-        "6. Lịch sử giao dịch"
+        "🏠 Trang chủ",
+        "💳 Mở thẻ ngân hàng",
+        "👤 Mở tài khoản",
+        "💰 Gửi tiết kiệm",
+        "🏦 Vay vốn ngân hàng",
+        "📋 Quản lý đăng ký"
     ]
 )
 
-if st.sidebar.button("Đăng xuất"):
-    st.session_state.logged_in = False
-    st.rerun()
+st.sidebar.divider()
+st.sidebar.info(
+    "DemoBank\n\n"
+    "Ứng dụng mô phỏng phục vụ học tập.\n"
+    "Không thực hiện giao dịch tài chính thật."
+)
 
-# ===== HOME =====
-if page == "Trang chủ":
-    st.title("Xin chào, Sinh viên!")
-    st.write("Chào mừng đến với hệ thống ngân hàng mô phỏng.")
+# =========================
+# HÀM LƯU YÊU CẦU
+# =========================
+def save_request(service, customer, details):
+    request = {
+        "Mã yêu cầu": "TB" + str(random.randint(100000, 999999)),
+        "Dịch vụ": service,
+        "Họ và tên": customer,
+        "Thông tin": details,
+        "Ngày đăng ký": datetime.now().strftime("%d/%m/%Y %H:%M"),
+        "Trạng thái": "Chờ xử lý"
+    }
+    st.session_state.requests.append(request)
+    return request["Mã yêu cầu"]
 
-    st.metric("Số dư demo", f"{st.session_state.balance:,.0f} VNĐ")
 
-    st.subheader("Các dịch vụ")
-    st.markdown("""
-    - 📝 Mở tài khoản trực tuyến
-    - 💳 Đăng ký thẻ mô phỏng
-    - 💰 Gửi tiết kiệm và tính lãi
-    - 🏠 Mô phỏng khoản vay
-    - 💸 Chuyển tiền giả lập
-    - 📋 Theo dõi lịch sử thao tác
-    """)
+# =========================
+# TRANG CHỦ
+# =========================
+if menu == "🏠 Trang chủ":
 
-    st.info("Chọn dịch vụ ở thanh menu bên trái để bắt đầu.")
+    st.subheader("Xin chào! Chào mừng đến với DemoBank 👋")
+    st.write(
+        "Khám phá các dịch vụ ngân hàng trực tuyến "
+        "và gửi yêu cầu đăng ký ngay trên ứng dụng."
+    )
 
-# ===== 1. OPEN ACCOUNT =====
-elif page == "1. Mở tài khoản":
-    st.title("📝 Mở tài khoản demo")
-    st.write("Điền thông tin mẫu để minh họa quy trình đăng ký.")
+    col1, col2 = st.columns(2)
 
-    with st.form("account_form"):
-        name = st.text_input("Họ và tên minh họa")
-        email = st.text_input("Email mẫu")
-        phone = st.text_input("Số điện thoại mẫu")
-        account_type = st.selectbox(
-            "Loại tài khoản",
-            ["Tài khoản thanh toán demo", "Tài khoản số đẹp demo"]
-        )
-        submit = st.form_submit_button("Gửi đăng ký")
+    with col1:
+        st.markdown("""
+        <div class="service-card">
+        <h3>💳 Mở thẻ ngân hàng</h3>
+        <p>Đăng ký thẻ ghi nợ hoặc thẻ tín dụng.</p>
+        </div>
+        """, unsafe_allow_html=True)
 
-    if submit:
-        if not name.strip() or not email.strip() or not phone.strip():
-            st.error("Vui lòng điền đầy đủ các trường.")
-        else:
-            request = {
-                "Mã hồ sơ demo": uuid.uuid4().hex[:8].upper(),
-                "Họ tên": name,
-                "Email mẫu": email,
-                "Điện thoại mẫu": phone,
-                "Loại tài khoản": account_type,
-                "Trạng thái": "Đã tiếp nhận mô phỏng"
-            }
-            st.session_state.account_requests.append(request)
-            log_action("Mở tài khoản", account_type)
-            st.success("Đăng ký mô phỏng hoàn tất!")
-            st.json(request)
+    with col2:
+        st.markdown("""
+        <div class="service-card">
+        <h3>👤 Mở tài khoản</h3>
+        <p>Đăng ký tài khoản ngân hàng trực tuyến.</p>
+        </div>
+        """, unsafe_allow_html=True)
 
-    if st.session_state.account_requests:
-        st.subheader("Hồ sơ demo đã tạo")
-        st.dataframe(
-            st.session_state.account_requests,
-            use_container_width=True
-        )
+    col3, col4 = st.columns(2)
 
-# ===== 2. OPEN CARD =====
-elif page == "2. Mở thẻ":
-    st.title("💳 Đăng ký thẻ demo")
-    st.write("Chọn loại thẻ để xem minh họa.")
+    with col3:
+        st.markdown("""
+        <div class="service-card">
+        <h3>💰 Gửi tiết kiệm</h3>
+        <p>Tìm hiểu tiền gửi và ước tính tiền lãi.</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col4:
+        st.markdown("""
+        <div class="service-card">
+        <h3>🏦 Vay vốn ngân hàng</h3>
+        <p>Đăng ký nhu cầu vay vốn để được tư vấn.</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.divider()
+    st.subheader("📊 Tổng quan đăng ký")
+
+    c1, c2, c3 = st.columns(3)
+
+    c1.metric("Tổng yêu cầu", len(st.session_state.requests))
+    c2.metric("Tài khoản đăng ký", len(st.session_state.accounts))
+    c3.metric("Yêu cầu vay vốn", len(st.session_state.loans))
+
+    st.info("👉 Chọn một dịch vụ ở thanh menu bên trái để bắt đầu.")
+
+
+# =========================
+# 1. MỞ THẺ NGÂN HÀNG
+# =========================
+elif menu == "💳 Mở thẻ ngân hàng":
+
+    st.subheader("💳 ĐĂNG KÝ MỞ THẺ NGÂN HÀNG")
+    st.write("Điền thông tin để gửi yêu cầu đăng ký thẻ.")
 
     with st.form("card_form"):
-        owner = st.text_input("Tên chủ thẻ minh họa")
+
+        name = st.text_input("Họ và tên *")
+        phone = st.text_input("Số điện thoại *")
+        email = st.text_input("Email")
         card_type = st.selectbox(
             "Loại thẻ",
-            ["Thẻ ghi nợ demo", "Thẻ tín dụng demo"]
+            ["Thẻ ghi nợ nội địa", "Thẻ ghi nợ quốc tế",
+             "Thẻ tín dụng"]
         )
-        card_style = st.selectbox(
-            "Phong cách thẻ",
-            ["Xanh lá", "Đen", "Xanh dương"]
+        card_method = st.radio(
+            "Phương thức nhận thẻ",
+            ["Nhận tại quầy", "Đăng ký nhận tại nhà"]
         )
-        submit = st.form_submit_button("Đăng ký thẻ demo")
 
-    if submit:
-        if not owner.strip():
-            st.error("Vui lòng nhập tên minh họa.")
-        else:
-            card = {
-                "Mã hồ sơ demo": uuid.uuid4().hex[:8].upper(),
-                "Chủ thẻ": owner,
-                "Loại thẻ": card_type,
-                "Phong cách": card_style,
-                "Số thẻ": "DEMO **
-** 1234",
-                "Trạng thái": "Đăng ký mô phỏng hoàn tất"
-            }
-            st.session_state.card_requests.append(card)
-            log_action("Mở thẻ", card_type)
-            st.success("Đăng ký thẻ demo thành công!")
+        agree = st.checkbox(
+            "Tôi xác nhận thông tin cung cấp là chính xác."
+        )
 
-            st.markdown(f"""
-            <div style="background:#087443;color:white;
-                        padding:25px;border-radius:16px">
-                <h3 style="color:white">BANKING DEMO</h3>
-                <p>THẺ MÔ PHỎNG — KHÔNG CÓ GIÁ TRỊ THANH TOÁN</p>
-                <h2 style="color:white">DEMO **
-** 1234</h2>
-                <p>CHỦ THẺ: {owner}</p>
-                <p>{card_type}</p>
-            </div>
-            """, unsafe_allow_html=True)
-
-    if st.session_state.card_requests:
-        st.subheader("Hồ sơ thẻ demo")
-        st.dataframe(
-            st.session_state.card_requests,
+        submitted = st.form_submit_button(
+            "GỬI YÊU CẦU MỞ THẺ",
             use_container_width=True
         )
 
-# ===== 3. SAVINGS =====
-elif page == "3. Gửi tiết kiệm":
-    st.title("💰 Gửi tiết kiệm demo")
-    st.caption("Lãi suất bên dưới là giả định phục vụ bài thuyết trình.")
+        if submitted:
+            if not name.strip() or not phone.strip():
+                st.error("Vui lòng nhập họ tên và số điện thoại.")
+            elif not phone.strip().isdigit() or len(phone.strip()) not in range(9, 12):
+                st.error("Số điện thoại chưa hợp lệ.")
+            elif not agree:
+                st.warning("Vui lòng xác nhận thông tin.")
+            else:
+                code = save_request(
+                    "Mở thẻ ngân hàng",
+                    name.strip(),
+                    f"Loại thẻ: {card_type}; Nhận thẻ: {card_method}"
+                )
+                st.session_state.cards.append({
+                    "Mã yêu cầu": code,
+                    "Họ và tên": name.strip(),
+                    "Loại thẻ": card_type
+                })
+                st.success(f"Đã ghi nhận yêu cầu! Mã yêu cầu: {code}")
+
+
+# =========================
+# 2. MỞ TÀI KHOẢN
+# =========================
+elif menu == "👤 Mở tài khoản":
+
+    st.subheader("👤 ĐĂNG KÝ MỞ TÀI KHOẢN")
+    st.write("Đăng ký thông tin cơ bản để yêu cầu mở tài khoản.")
+
+    with st.form("account_form"):
+
+        name = st.text_input("Họ và tên *")
+        phone = st.text_input("Số điện thoại *")
+        email = st.text_input("Địa chỉ email")
+        birth = st.date_input(
+            "Ngày sinh",
+            value=datetime(2000, 1, 1),
+            min_value=datetime(1920, 1, 1),
+            max_value=datetime.today()
+        )
+        account_type = st.selectbox(
+            "Loại tài khoản",
+            ["Tài khoản thanh toán cá nhân",
+             "Tài khoản nhận lương",
+             "Tài khoản trực tuyến"]
+        )
+
+        agree = st.checkbox(
+            "Tôi đồng ý gửi thông tin đăng ký."
+        )
+
+        submitted = st.form_submit_button(
+            "ĐĂNG KÝ TÀI KHOẢN",
+            use_container_width=True
+        )
+
+        if submitted:
+            if not name.strip() or not phone.strip():
+                st.error("Vui lòng nhập họ tên và số điện thoại.")
+            elif not phone.strip().isdigit() or len(phone.strip()) not in range(9, 12):
+                st.error("Số điện thoại chưa hợp lệ.")
+            elif not agree:
+                st.warning("Vui lòng xác nhận trước khi đăng ký.")
+            else:
+                code = save_request(
+                    "Mở tài khoản",
+                    name.strip(),
+                    f"Loại tài khoản: {account_type}; "
+                    f"Ngày sinh: {birth}; Email: {email}"
+                )
+                st.session_state.accounts.append({
+                    "Mã yêu cầu": code,
+                    "Họ và tên": name.strip(),
+                    "Loại tài khoản": account_type
+                })
+                st.success(
+                    f"Đăng ký thành công! Mã yêu cầu: {code}"
+                )
+
+
+# =========================
+# 3. GỬI TIẾT KIỆM
+# =========================
+elif menu == "💰 Gửi tiết kiệm":
+
+    st.subheader("💰 GỬI TIẾT KIỆM")
+    st.write(
+        "Nhập số tiền, kỳ hạn và lãi suất giả định "
+        "để tính số tiền lãi dự kiến."
+    )
 
     with st.form("savings_form"):
-        principal = st.number_input(
+
+        name = st.text_input("Họ và tên *")
+        phone = st.text_input("Số điện thoại *")
+
+        amount = st.number_input(
             "Số tiền gửi (VNĐ)",
-            min_value=100_000,
-            value=1_000_000,
-            step=100_000
+            min_value=1000000,
+            value=10000000,
+            step=1000000
         )
-        months = st.selectbox("Kỳ hạn", [1, 3, 6, 9, 12, 24])
+
+        months = st.selectbox(
+            "Kỳ hạn gửi",
+            [1, 3, 6, 9, 12, 18, 24],
+            format_func=lambda x: f"{x} tháng"
+        )
+
         rate = st.number_input(
             "Lãi suất năm giả định (%)",
             min_value=0.0,
@@ -239,167 +311,166 @@ elif page == "3. Gửi tiết kiệm":
             value=4.5,
             step=0.1
         )
-        submit = st.form_submit_button("Tính tiền lãi")
 
-    if submit:
-        interest = int(principal * (rate / 100) * months / 12)
-        total = int(principal) + interest
-
-        st.success("Đã tính kết quả minh họa!")
-        st.metric("Tiền gửi", f"{principal:,.0f} VNĐ")
-        st.metric("Lãi dự kiến", f"{interest:,.0f} VNĐ")
-        st.metric("Tổng cuối kỳ", f"{total:,.0f} VNĐ")
-
-        st.caption(
-            "Công thức đơn giản: Tiền gửi × lãi suất năm × số tháng / 12. "
-            "Không phải báo giá hay cam kết lãi suất thực."
+        submitted = st.form_submit_button(
+            "TÍNH LÃI VÀ ĐĂNG KÝ",
+            use_container_width=True
         )
 
-        if st.button("Lưu hồ sơ tiết kiệm demo"):
-            record = {
-                "Mã demo": uuid.uuid4().hex[:8].upper(),
-                "Tiền gửi": int(principal),
-                "Kỳ hạn (tháng)": months,
-                "Lãi suất giả định (%)": rate,
-                "Lãi minh họa": interest,
-                "Tổng cuối kỳ minh họa": total
-            }
-            st.session_state.savings.append(record)
-            log_action("Gửi tiết kiệm", f"Kỳ hạn {months} tháng", principal)
-            st.success("Đã lưu hồ sơ mô phỏng.")
+        if submitted:
+            if not name.strip() or not phone.strip():
+                st.error("Vui lòng nhập họ tên và số điện thoại.")
+            elif not phone.strip().isdigit() or len(phone.strip()) not in range(9, 12):
+                st.error("Số điện thoại chưa hợp lệ.")
+            else:
+                interest = amount * (rate / 100) * months / 12
+                total = amount + interest
 
-    if st.session_state.savings:
-        st.subheader("Hồ sơ tiết kiệm demo")
-        st.dataframe(st.session_state.savings, use_container_width=True)
+                code = save_request(
+                    "Gửi tiết kiệm",
+                    name.strip(),
+                    f"Số tiền: {amount:,.0f} VNĐ; "
+                    f"Kỳ hạn: {months} tháng; Lãi suất giả định: {rate}%"
+                )
 
-# ===== 4. LOAN =====
-elif page == "4. Vay vốn":
-    st.title("🏠 Tính khoản vay demo")
-    st.caption("Lãi suất giả định; kết quả chỉ phục vụ minh họa.")
+                st.session_state.savings.append({
+                    "Mã yêu cầu": code,
+                    "Họ và tên": name.strip(),
+                    "Số tiền gửi": amount,
+                    "Kỳ hạn (tháng)": months,
+                    "Lãi dự kiến": interest
+                })
+
+                st.success(f"Đã ghi nhận yêu cầu! Mã: {code}")
+
+                col1, col2, col3 = st.columns(3)
+                col1.metric("Tiền gửi", f"{amount:,.0f} đ")
+                col2.metric("Tiền lãi dự kiến", f"{interest:,.0f} đ")
+                col3.metric("Tổng tiền dự kiến", f"{total:,.0f} đ")
+
+                st.caption(
+                    "Lưu ý: Đây là phép tính lãi đơn minh họa, "
+                    "chưa tính thuế, phí hoặc cách tính lãi thực tế. "
+                    "Lãi suất trên không phải lãi suất chào bán của ngân hàng."
+                )
+
+
+# =========================
+# 4. VAY VỐN NGÂN HÀNG
+# =========================
+elif menu == "🏦 Vay vốn ngân hàng":
+
+    st.subheader("🏦 ĐĂNG KÝ NHU CẦU VAY VỐN")
+    st.write("Gửi nhu cầu vay để được tư vấn về hồ sơ và điều kiện.")
 
     with st.form("loan_form"):
-        principal = st.number_input(
-            "Số tiền vay (VNĐ)",
-            min_value=1_000_000,
-            value=20_000_000,
-            step=1_000_000
+
+        name = st.text_input("Họ và tên *")
+        phone = st.text_input("Số điện thoại *")
+
+        loan_type = st.selectbox(
+            "Mục đích vay",
+            ["Vay tiêu dùng", "Vay mua nhà",
+             "Vay mua xe", "Vay kinh doanh", "Mục đích khác"]
         )
-        months = st.selectbox(
-            "Thời hạn vay (tháng)",
-            [6, 12, 24, 36, 48, 60]
-        )
-        rate = st.number_input(
-            "Lãi suất năm giả định (%)",
-            min_value=0.0,
-            max_value=30.0,
-            value=8.0,
-            step=0.5
-        )
-        submit = st.form_submit_button("Tính khoản trả")
 
-    if submit:
-        monthly_rate = rate / 100 / 12
-
-        if monthly_rate == 0:
-            payment = principal / months
-        else:
-            payment = (
-                principal * monthly_rate
-                / (1 - (1 + monthly_rate) ** (-months))
-            )
-
-        total = payment * months
-        interest = total - principal
-
-        st.success("Đã tính khoản vay minh họa!")
-        st.metric("Khoản vay", f"{principal:,.0f} VNĐ")
-        st.metric("Trả mỗi tháng ước tính", f"{payment:,.0f} VNĐ")
-        st.metric("Tổng lãi ước tính", f"{interest:,.0f} VNĐ")
-        st.metric("Tổng trả ước tính", f"{total:,.0f} VNĐ")
-
-        if st.button("Lưu hồ sơ vay demo"):
-            record = {
-                "Mã demo": uuid.uuid4().hex[:8].upper(),
-                "Số tiền vay": int(principal),
-                "Thời hạn (tháng)": months,
-                "Lãi suất giả định (%)": rate,
-                "Khoản trả tháng minh họa": round(payment),
-                "Tổng trả minh họa": round(total)
-            }
-            st.session_state.loans.append(record)
-            log_action("Vay vốn", f"Thời hạn {months} tháng", principal)
-            st.success("Đã lưu hồ sơ vay mô phỏng.")
-
-    if st.session_state.loans:
-        st.subheader("Hồ sơ vay demo")
-        st.dataframe(st.session_state.loans, use_container_width=True)
-
-# ===== 5. TRANSFER =====
-elif page == "5. Chuyển tiền":
-    st.title("💸 Chuyển tiền demo")
-    st.metric("Số dư demo", f"{st.session_state.balance:,.0f} VNĐ")
-
-    with st.form("transfer_form"):
-        recipient = st.text_input("Tên người nhận")
-        account = st.text_input("Số tài khoản minh họa")
-        bank = st.selectbox(
-            "Ngân hàng minh họa",
-            ["Ngân hàng Demo A", "Ngân hàng Demo B", "Ngân hàng Demo C"]
-        )
         amount = st.number_input(
-            "Số tiền chuyển (VNĐ)",
-            min_value=0,
-            value=100_000,
-            step=50_000
+            "Số tiền muốn vay (VNĐ)",
+            min_value=1000000,
+            value=50000000,
+            step=5000000
         )
-        message = st.text_input("Nội dung chuyển tiền")
-        submit = st.form_submit_button("Xác nhận chuyển tiền")
 
-    if submit:
-        if not recipient.strip() or not account.strip():
-            st.error("Vui lòng nhập người nhận và tài khoản minh họa.")
-        elif amount <= 0:
-            st.error("Số tiền phải lớn hơn 0.")
-        elif amount > st.session_state.balance:
-            st.error("Số dư demo không đủ.")
-        else:
-            st.session_state.balance -= int(amount)
-            tx_id = uuid.uuid4().hex[:8].upper()
-            log_action(
-                "Chuyển tiền",
-                f"Người nhận: {recipient}; TK demo: {account}; "
-                f"{bank}; Nội dung: {message}; Mã: {tx_id}",
-                amount
-            )
-            st.success("✅ GIAO DỊCH MÔ PHỎNG THÀNH CÔNG!")
-            st.write(f"*Mã giao dịch demo:* {tx_id}")
-            st.write(f"*Người nhận:* {recipient}")
-            st.write(f"*Ngân hàng minh họa:* {bank}")
-            st.write(f"*Số tiền:* {amount:,.0f} VNĐ")
-            st.write(f"*Số dư demo còn lại:* {st.session_state.balance:,.0f} VNĐ")
-
-# ===== 6. HISTORY =====
-elif page == "6. Lịch sử giao dịch":
-    st.title("📋 Lịch sử thao tác demo")
-
-    if st.session_state.history:
-        st.dataframe(
-            st.session_state.history,
-            use_container_width=True,
-            hide_index=True
+        months = st.selectbox(
+            "Thời hạn vay dự kiến",
+            [6, 12, 24, 36, 60, 120, 240],
+            format_func=lambda x: f"{x} tháng"
         )
+
+        income = st.selectbox(
+            "Nguồn thu nhập",
+            ["Lương hàng tháng", "Kinh doanh",
+             "Lao động tự do", "Nguồn thu nhập khác"]
+        )
+
+        submitted = st.form_submit_button(
+            "GỬI YÊU CẦU VAY VỐN",
+            use_container_width=True
+        )
+
+        if submitted:
+            if not name.strip() or not phone.strip():
+                st.error("Vui lòng nhập họ tên và số điện thoại.")
+            elif not phone.strip().isdigit() or len(phone.strip()) not in range(9, 12):
+                st.error("Số điện thoại chưa hợp lệ.")
+            else:
+                code = save_request(
+                    "Vay vốn ngân hàng",
+                    name.strip(),
+                    f"Mục đích: {loan_type}; "
+                    f"Số tiền: {amount:,.0f} VNĐ; "
+                    f"Kỳ hạn: {months} tháng; Thu nhập: {income}"
+                )
+
+                st.session_state.loans.append({
+                    "Mã yêu cầu": code,
+                    "Họ và tên": name.strip(),
+                    "Mục đích vay": loan_type,
+                    "Số tiền vay": amount,
+                    "Thời hạn (tháng)": months
+                })
+
+                st.success(
+                    f"Đã tiếp nhận yêu cầu tư vấn. Mã: {code}"
+                )
+                st.info(
+                    "Yêu cầu này chưa phải hợp đồng vay và "
+                    "không đồng nghĩa với việc khoản vay được duyệt."
+                )
+
+
+# =========================
+# QUẢN LÝ ĐĂNG KÝ
+# =========================
+elif menu == "📋 Quản lý đăng ký":
+
+    st.subheader("📋 DANH SÁCH YÊU CẦU ĐĂNG KÝ")
+
+    if not st.session_state.requests:
+        st.info("Chưa có yêu cầu đăng ký nào.")
     else:
-        st.info("Chưa có thao tác nào. Hãy thử một dịch vụ demo.")
+        df = pd.DataFrame(st.session_state.requests)
 
-    st.subheader("Tổng hợp hồ sơ demo")
-    st.write("Hồ sơ mở tài khoản:", len(st.session_state.account_requests))
-    st.write("Hồ sơ mở thẻ:", len(st.session_state.card_requests))
-    st.write("Hồ sơ tiết kiệm:", len(st.session_state.savings))
-    st.write("Hồ sơ vay vốn:", len(st.session_state.loans))
+        service_filter = st.selectbox(
+            "Lọc theo dịch vụ",
+            ["Tất cả"] + df["Dịch vụ"].unique().tolist()
+        )
 
+        if service_filter != "Tất cả":
+            df = df[df["Dịch vụ"] == service_filter]
+
+        st.dataframe(df, use_container_width=True, hide_index=True)
+
+        csv = df.to_csv(index=False).encode("utf-8-sig")
+
+        st.download_button(
+            "📥 TẢI DANH SÁCH CSV",
+            data=csv,
+            file_name="thienbank_dang_ky.csv",
+            mime="text/csv",
+            use_container_width=True
+        )
+
+    with st.expander("Chi tiết từng nhóm dịch vụ"):
+        st.write("💳 Đăng ký thẻ:", len(st.session_state.cards))
+        st.write("👤 Mở tài khoản:", len(st.session_state.accounts))
+        st.write("💰 Gửi tiết kiệm:", len(st.session_state.savings))
+        st.write("🏦 Vay vốn:", len(st.session_state.loans))
+
+# =========================
+# CHÂN TRANG
+# =========================
 st.divider()
 st.caption(
-    "BANKING DEMO — Dự án học tập. Không thuộc Vietcombank. "
-    "Không kết nối tài khoản thật, không phát hành thẻ, "
-    "không tiếp nhận hồ sơ tài chính thật và không chuyển tiền thật."
+    "© 2026 DemoBank | Ứng dụng mô phỏng ngân hàng số phục vụ học tập."
 )
